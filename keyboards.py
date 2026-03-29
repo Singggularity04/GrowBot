@@ -78,10 +78,14 @@ def style_choice_kb() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 def upsell_kb() -> InlineKeyboardMarkup:
-    """Upsell yes/no options."""
+    """Upsell specific service options."""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="✅ Да", callback_data="upsell:yes"))
-    builder.row(InlineKeyboardButton(text="❌ Нет, спасибо", callback_data="upsell:no"))
+    builder.row(
+        InlineKeyboardButton(text="✨ Укрепление", callback_data="upsell:strengthen"),
+        InlineKeyboardButton(text="✨ Дизайн", callback_data="upsell:design")
+    )
+    builder.row(InlineKeyboardButton(text="✨ Уход", callback_data="upsell:care"))
+    builder.row(InlineKeyboardButton(text="❌ Ничего не нужно", callback_data="upsell:no"))
     builder.row(InlineKeyboardButton(text="🔙 Назад", callback_data="style_choice"))
     return builder.as_markup()
 
@@ -126,9 +130,7 @@ def quiz_priority_kb() -> InlineKeyboardMarkup:
 def quiz_result_kb() -> InlineKeyboardMarkup:
     """After recommendation — book now."""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📅 Записаться прямо в Telegram", callback_data="booking_telegram"))
-    builder.row(InlineKeyboardButton(text="🔗 Записаться через Dikidi", url=DIKIDI_LINK))
-    builder.row(InlineKeyboardButton(text="✅ Я записалась!", callback_data="i_booked"))
+    builder.row(InlineKeyboardButton(text="📅 Продолжить запись", callback_data="style_choice"))
     builder.row(InlineKeyboardButton(text="🔙 В меню", callback_data="menu"))
     return builder.as_markup()
 

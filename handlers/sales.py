@@ -58,7 +58,13 @@ async def process_style_choice(callback: CallbackQuery) -> None:
 async def process_upsell(callback: CallbackQuery) -> None:
     """Handle the upsell answer and show fears/urgency before final CTA."""
     upsell_ans = callback.data.split(":")[1]
-    await callback.answer()
+    
+    labels = {"strengthen": "Укрепление", "design": "Дизайн", "care": "Уход"}
+    if upsell_ans in labels:
+        await callback.answer(f"✅ {labels[upsell_ans]} добавлено к записи!", show_alert=False)
+    else:
+        await callback.answer()
+        
     await db.log_interaction(callback.from_user.id, f"upsell_{upsell_ans}")
 
     try:
