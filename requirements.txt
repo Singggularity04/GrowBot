@@ -1,0 +1,5 @@
+aiogram==3.26.0
+python-dotenv==1.2.2
+APScheduler==3.11.2
+aiosqlite==0.22.1
+pytz==2026.1.post1

@@ -1,0 +1,22 @@
+# Environment Variables
+.env
+
+# SQLite databases
+*.db
+*.sqlite3
+
+# Python cache & virtualenvs
+__pycache__/
+*.pyc
+venv/
+env/
+.venv/
+.env_venv/
+
+# PyCharm / VSCode config
+.idea/
+.vscode/
+
+# IDE files
+*.swp
+*~
