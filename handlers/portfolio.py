@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, FSInputFile
 
 import database as db
 from texts import PORTFOLIO_ITEMS, PORTFOLIO_HEADER
-from keyboards import portfolio_nav_kb, book_now_kb
+from keyboards import portfolio_nav_kb, booking_choice_kb
 
 router = Router()
 

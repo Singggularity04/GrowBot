@@ -39,6 +39,28 @@ async def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
             )
         """)
+        
+        # --- NailsBot telegram booking tables ---
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS slots (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                date        TEXT NOT NULL,          -- YYYY-MM-DD
+                time        TEXT NOT NULL,          -- HH:MM
+                is_booked   INTEGER DEFAULT 0,      -- 0=free, 1=booked
+                is_closed   INTEGER DEFAULT 0       -- 1=day closed by admin
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS bookings (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id     INTEGER NOT NULL,
+                slot_id     INTEGER NOT NULL,
+                name        TEXT NOT NULL,
+                phone       TEXT NOT NULL,
+                created_at  TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (slot_id) REFERENCES slots(id)
+            )
+        """)
         await db.commit()
 
 
@@ -161,3 +183,177 @@ async def get_stats() -> dict:
         "conversion": conversion,
         "actions": actions,
     }
+
+# --------------- Slot management ---------------
+
+async def add_slot(date: str, time: str):
+    """Add a single available slot."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO slots (date, time) VALUES (?, ?)", (date, time)
+        )
+        await db.commit()
+
+
+async def get_available_dates() -> list[str]:
+    """Return sorted list of dates that have at least one free, open slot."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT DISTINCT date FROM slots
+            WHERE is_booked = 0 AND is_closed = 0
+            ORDER BY date
+        """)
+        rows = await cursor.fetchall()
+        return [row["date"] for row in rows]
+
+
+async def get_available_times(date: str) -> list[dict]:
+    """Return free time slots for a given date."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT id, time FROM slots
+            WHERE date = ? AND is_booked = 0 AND is_closed = 0
+            ORDER BY time
+        """, (date,))
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+async def get_slot_by_id(slot_id: int) -> dict | None:
+    """Return a single slot by ID."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM slots WHERE id = ?", (slot_id,))
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def delete_slot(slot_id: int):
+    """Delete an unbooked slot."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM slots WHERE id = ? AND is_booked = 0", (slot_id,))
+        await db.commit()
+
+
+async def close_day(date: str):
+    """Mark all slots on a date as closed (unavailable)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE slots SET is_closed = 1 WHERE date = ?", (date,)
+        )
+        await db.commit()
+
+
+async def get_all_slots_for_date(date: str) -> list[dict]:
+    """Return ALL slots for a date (for admin view)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT * FROM slots WHERE date = ? ORDER BY time", (date,)
+        )
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+# --------------- Booking management ---------------
+
+async def book_slot(user_id: int, slot_id: int, name: str, phone: str) -> int:
+    """Create a booking and mark slot as booked. Returns booking ID."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE slots SET is_booked = 1 WHERE id = ?", (slot_id,))
+        cursor = await db.execute(
+            "INSERT INTO bookings (user_id, slot_id, name, phone) VALUES (?, ?, ?, ?)",
+            (user_id, slot_id, name, phone),
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_booking_by_user(user_id: int) -> dict | None:
+    """Return active booking for a user (only one allowed at a time)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT b.*, s.date, s.time
+            FROM bookings b JOIN slots s ON b.slot_id = s.id
+            WHERE b.user_id = ?
+        """, (user_id,))
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def cancel_booking(booking_id: int) -> dict | None:
+    """Cancel a booking: free the slot and delete the record. Returns slot info."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # Get slot_id before deleting
+        cursor = await db.execute(
+            "SELECT slot_id FROM bookings WHERE id = ?", (booking_id,)
+        )
+        row = await cursor.fetchone()
+        if not row:
+            return None
+        slot_id = row["slot_id"]
+
+        # Free slot and remove booking
+        await db.execute("UPDATE slots SET is_booked = 0 WHERE id = ?", (slot_id,))
+        await db.execute("DELETE FROM bookings WHERE id = ?", (booking_id,))
+        await db.commit()
+
+        cursor = await db.execute("SELECT * FROM slots WHERE id = ?", (slot_id,))
+        slot = await cursor.fetchone()
+        return dict(slot) if slot else None
+
+
+async def get_bookings_for_date(date: str) -> list[dict]:
+    """Return all bookings for a given date (for admin view)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT b.*, s.date, s.time
+            FROM bookings b JOIN slots s ON b.slot_id = s.id
+            WHERE s.date = ?
+            ORDER BY s.time
+        """, (date,))
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+async def get_all_future_bookings() -> list[dict]:
+    """Return all future bookings (for scheduler restore on startup)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT b.*, s.date, s.time
+            FROM bookings b JOIN slots s ON b.slot_id = s.id
+            WHERE s.date >= date('now')
+            ORDER BY s.date, s.time
+        """)
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+async def get_booking_by_id(booking_id: int) -> dict | None:
+    """Return a booking by its ID."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("""
+            SELECT b.*, s.date, s.time
+            FROM bookings b JOIN slots s ON b.slot_id = s.id
+            WHERE b.id = ?
+        """, (booking_id,))
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def get_all_dates_with_slots() -> list[str]:
+    """Return all dates that have any slots (for admin calendar)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT DISTINCT date FROM slots ORDER BY date"
+        )
+        rows = await cursor.fetchall()
+        return [row["date"] for row in rows]

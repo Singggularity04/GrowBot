@@ -13,7 +13,7 @@ from aiogram.enums import ParseMode
 
 from config import BOT_TOKEN
 from database import init_db
-from scheduler import scheduler, restore_followups
+from scheduler import scheduler, restore_jobs
 from handlers import all_routers
 
 
@@ -38,10 +38,10 @@ async def main() -> None:
     await init_db()
     logging.info("Database initialized.")
 
-    # Start follow-up scheduler and restore pending jobs
+    # Start scheduler and restore pending jobs (funnels and reminders)
     scheduler.start()
-    await restore_followups(bot)
-    logging.info("Scheduler started, follow-ups restored.")
+    await restore_jobs(bot, dp_storage=dp.storage)
+    logging.info("Scheduler started, all pending jobs restored.")
 
     # Start polling
     logging.info("GROW BOT is starting...")

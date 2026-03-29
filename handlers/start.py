@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 import database as db
 from texts import START_MESSAGE, BOOKING_CONFIRMED, UNKNOWN_MESSAGE
 from keyboards import start_kb, back_to_menu_kb
-from scheduler import schedule_followups, cancel_followups
+from scheduler import schedule_funnel, cancel_reminder
 
 router = Router()
 
@@ -30,7 +30,7 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await message.answer(START_MESSAGE, reply_markup=start_kb())
 
     # Schedule follow-up messages for users who don't book
-    await schedule_followups(message.bot, message.from_user.id)
+    await schedule_funnel(message.bot, message.from_user.id)
 
 
 @router.callback_query(F.data == "menu")
@@ -47,7 +47,16 @@ async def user_booked(callback: CallbackQuery) -> None:
     await callback.answer("Отлично! 🎉")
     await db.mark_booked(callback.from_user.id)
     await db.log_interaction(callback.from_user.id, "booked")
-    cancel_followups(callback.from_user.id)
+    
+    # Cancel all pending follow-up messages
+    await db.cancel_followups(callback.from_user.id)
+    from scheduler import scheduler
+    for stage in (1, 2, 3):
+        try:
+            scheduler.remove_job(f"funnel_{callback.from_user.id}_{stage}")
+        except:
+            pass
+            
     await callback.message.edit_text(BOOKING_CONFIRMED, reply_markup=back_to_menu_kb())
 
 

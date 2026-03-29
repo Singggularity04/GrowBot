@@ -13,7 +13,7 @@ from texts import (
 )
 from keyboards import (
     quiz_services_kb, quiz_experience_kb,
-    quiz_priority_kb, quiz_result_kb,
+    quiz_priority_kb, quiz_result_kb, booking_choice_kb
 )
 
 router = Router()

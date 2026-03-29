@@ -292,6 +292,12 @@ FOLLOWUP_3 = (
     "Одно нажатие — и вы записаны ✨👇"
 )
 
+FOLLOWUP_TEXTS = {
+    1: FOLLOWUP_1,
+    2: FOLLOWUP_2,
+    3: FOLLOWUP_3,
+}
+
 # ─────────────────── FINAL (after booking) ───────────────────
 
 BOOKING_CONFIRMED = (

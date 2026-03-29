@@ -18,6 +18,10 @@ def now_moscow() -> datetime:
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
+# --- Optional channel subscription ---
+CHANNEL_ID = os.getenv("CHANNEL_ID")
+CHANNEL_LINK = os.getenv("CHANNEL_LINK")
+
 # --- Booking link (Dikidi / Yclients / etc.) ---
 DIKIDI_LINK = os.getenv("DIKIDI_LINK", "https://dikidi.net")
 
