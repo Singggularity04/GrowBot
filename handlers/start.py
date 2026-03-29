@@ -38,7 +38,16 @@ async def back_to_menu(callback: CallbackQuery, state: FSMContext) -> None:
     """Return to main menu."""
     await state.clear()
     await callback.answer()
-    await callback.message.edit_text(START_MESSAGE, reply_markup=start_kb())
+    
+    if callback.message.photo:
+        await callback.message.delete()
+        await callback.message.answer(START_MESSAGE, reply_markup=start_kb())
+    else:
+        try:
+            await callback.message.edit_text(START_MESSAGE, reply_markup=start_kb())
+        except Exception:
+            await callback.message.delete()
+            await callback.message.answer(START_MESSAGE, reply_markup=start_kb())
 
 
 @router.callback_query(F.data == "i_booked")
