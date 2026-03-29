@@ -2,8 +2,10 @@
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
+from aiogram.fsm.context import FSMContext
 
 import database as db
+from config import ADMIN_ID
 from texts import STYLE_CHOICE, STYLE_CONFIRM, UPSELL_PROMPT, FEARS_URGENCY, PRE_BOOKING
 from keyboards import style_choice_kb, upsell_kb, booking_choice_kb
 
@@ -37,9 +39,11 @@ async def prompt_style_choice(callback: CallbackQuery) -> None:
 # =========================================================================
 
 @router.callback_query(F.data.startswith("style:"))
-async def process_style_choice(callback: CallbackQuery) -> None:
+async def process_style_choice(callback: CallbackQuery, state: FSMContext) -> None:
     """Handle style selection and trigger the micro-sale + upsell."""
     style_key = callback.data.split(":")[1]
+    
+    await state.update_data(funnel_style=style_key)
     await callback.answer()
     await db.log_interaction(callback.from_user.id, f"chosen_style_{style_key}")
 
@@ -55,9 +59,11 @@ async def process_style_choice(callback: CallbackQuery) -> None:
 # =========================================================================
 
 @router.callback_query(F.data.startswith("upsell:"))
-async def process_upsell(callback: CallbackQuery) -> None:
+async def process_upsell(callback: CallbackQuery, state: FSMContext) -> None:
     """Handle the upsell answer and show fears/urgency before final CTA."""
     upsell_ans = callback.data.split(":")[1]
+    
+    await state.update_data(funnel_upsell=upsell_ans)
     
     labels = {"strengthen": "Укрепление", "design": "Дизайн", "care": "Уход"}
     if upsell_ans in labels:
@@ -66,6 +72,27 @@ async def process_upsell(callback: CallbackQuery) -> None:
         await callback.answer()
         
     await db.log_interaction(callback.from_user.id, f"upsell_{upsell_ans}")
+
+    # Notify admin
+    data = await state.get_data()
+    style_key = data.get("funnel_style", "не выбран")
+    
+    style_names = {"tender": "🌸 Нежный", "bright": "🔥 Яркий", "classic": "💎 Классика", "design": "✨ Дизайн"}
+    upsell_names = {"strengthen": "💎 Укрепление", "design": "✨ Дизайн", "care": "🌸 Уход", "no": "❌ Ничего не нужно"}
+    
+    user_link = f"@{callback.from_user.username}" if callback.from_user.username else callback.from_user.first_name
+    admin_msg = (
+        f"🔔 <b>Клиент проходит воронку!</b>\n\n"
+        f"👤 Кто: {user_link}\n"
+        f"🎨 Выбранный стиль: {style_names.get(style_key, style_key)}\n"
+        f"➕ Доп. услуга: {upsell_names.get(upsell_ans, upsell_ans)}\n\n"
+        f"<i>(Клиент перешел к выбору времени/Dikidi)</i>"
+    )
+    if ADMIN_ID:
+        try:
+            await callback.bot.send_message(ADMIN_ID, admin_msg, parse_mode="HTML")
+        except Exception:
+            pass
 
     try:
         await callback.message.delete()

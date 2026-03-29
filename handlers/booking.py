@@ -431,13 +431,23 @@ async def confirm_booking(callback: CallbackQuery, state: FSMContext):
         )
 
     # Notify admin
+    funnel_style = data.get("funnel_style")
+    funnel_upsell = data.get("funnel_upsell")
+    funnel_info = ""
+    if funnel_style or funnel_upsell:
+        style_names = {"tender": "🌸 Нежный", "bright": "🔥 Яркий", "classic": "💎 Классика", "design": "✨ Дизайн"}
+        upsell_names = {"strengthen": "💎 Укрепление", "design": "✨ Дизайн", "care": "🌸 Уход", "no": "❌ Ничего не нужно"}
+        s_str = style_names.get(funnel_style, funnel_style) if funnel_style else "Не выбран"
+        u_str = upsell_names.get(funnel_upsell, funnel_upsell) if funnel_upsell else "Не выбрана"
+        funnel_info = f"\n\n🎨 Стиль: {s_str}\n➕ Доп. услуга: {u_str}"
+
     admin_text = (
         f"📌 <b>Новая запись (Телеграм)!</b>\n\n"
         f"👤 Имя: {data['client_name']}\n"
         f"📱 Телефон: {data['client_phone']}\n"
         f"📅 Дата: {display_date}\n"
         f"🕐 Время: {data['selected_time']}\n"
-        f"🆔 Telegram ID: <code>{callback.from_user.id}</code>"
+        f"🆔 Telegram ID: <code>{callback.from_user.id}</code>{funnel_info}"
     )
     try:
         await callback.bot.send_message(ADMIN_ID, admin_text, parse_mode="HTML")

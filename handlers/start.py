@@ -50,11 +50,37 @@ async def back_to_menu(callback: CallbackQuery, state: FSMContext) -> None:
 
 
 @router.callback_query(F.data == "i_booked")
-async def user_booked(callback: CallbackQuery) -> None:
+async def user_booked(callback: CallbackQuery, state: FSMContext) -> None:
     """User confirms they booked via Dikidi — cancel follow-ups."""
     await callback.answer("Отлично! 🎉")
     await db.mark_booked(callback.from_user.id)
     await db.log_interaction(callback.from_user.id, "booked")
+    
+    # Notify admin
+    data = await state.get_data()
+    funnel_style = data.get("funnel_style")
+    funnel_upsell = data.get("funnel_upsell")
+    
+    funnel_info = ""
+    if funnel_style or funnel_upsell:
+        style_names = {"tender": "🌸 Нежный", "bright": "🔥 Яркий", "classic": "💎 Классика", "design": "✨ Дизайн"}
+        upsell_names = {"strengthen": "💎 Укрепление", "design": "✨ Дизайн", "care": "🌸 Уход", "no": "❌ Ничего не нужно"}
+        s_str = style_names.get(funnel_style, funnel_style) if funnel_style else "Не выбран"
+        u_str = upsell_names.get(funnel_upsell, funnel_upsell) if funnel_upsell else "Не выбрана"
+        funnel_info = f"\n\n🎨 Стиль: {s_str}\n➕ Доп. услуга: {u_str}"
+
+    from config import ADMIN_ID
+    if ADMIN_ID:
+        user_link = f"@{callback.from_user.username}" if callback.from_user.username else callback.from_user.first_name
+        admin_text = (
+            f"📌 <b>Клиент записался через Dikidi!</b>\n\n"
+            f"👤 Кто: {user_link}"
+            f"{funnel_info}"
+        )
+        try:
+            await callback.bot.send_message(ADMIN_ID, admin_text, parse_mode="HTML")
+        except Exception:
+            pass
     
     # Cancel all pending follow-up messages
     await db.cancel_followups(callback.from_user.id)
