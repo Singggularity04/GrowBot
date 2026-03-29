@@ -14,6 +14,7 @@ def start_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="⚡ Записаться быстро", callback_data="quick_book"))
     builder.row(InlineKeyboardButton(text="🧠 Помочь выбрать", callback_data="quiz_start"))
+    builder.row(InlineKeyboardButton(text="📋 Мои записи", callback_data="my_bookings"))
     builder.row(
         InlineKeyboardButton(text="📸 Примеры работ", callback_data="portfolio"),
         InlineKeyboardButton(text="❓ Задать вопрос", callback_data="faq"),

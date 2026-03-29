@@ -122,15 +122,15 @@ def quiz_recommendation(service_key: str, priority: str) -> str:
     """Generate personalized recommendation based on quiz answers."""
     service = SERVICES.get(service_key, SERVICES["manicure"])
     priority_text = {
-        "durability": "максимальную стойкость",
-        "natural": "натуральный результат",
-        "speed": "быстрый результат",
-    }.get(priority, "лучший результат")
+        "durability": "важна максимальная стойкость",
+        "natural": "важен натуральный результат",
+        "speed": "важен быстрый результат",
+    }.get(priority, "важен лучший результат")
 
     return (
         f"🎯 <b>Ваша идеальная процедура:</b>\n\n"
         f"{service['detail']}\n\n"
-        f"Подобрали с учётом того, что вам важна {priority_text} ✨\n\n"
+        f"Подобрали с учётом того, что вам {priority_text} ✨\n\n"
         f"🔥 <b>Это самый популярный вариант</b> — "
         f"свободные окна обычно разбирают быстро!\n\n"
         f"Запишитесь прямо сейчас, пока есть место 👇"
