@@ -30,6 +30,8 @@ MASTER_NAME = os.getenv("MASTER_NAME", "Мастер")
 MASTER_CITY = os.getenv("MASTER_CITY", "Москва")
 
 # --- Follow-up delays (seconds) ---
-FOLLOWUP_DELAY_1 = 3 * 60      # 3 minutes
-FOLLOWUP_DELAY_2 = 15 * 60     # 15 minutes
-FOLLOWUP_DELAY_3 = 2 * 60 * 60 # 2 hours
+FOLLOWUP_DELAY_1 = 10 * 60     # 10 minutes
+FOLLOWUP_DELAY_2 = 90 * 60     # 1.5 hours
+
+# --- Prices ---
+BASE_PRICE = os.getenv("BASE_PRICE", "1500 ₽")

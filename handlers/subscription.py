@@ -4,7 +4,8 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery
 
 from config import CHANNEL_ID, CHANNEL_LINK
-from keyboards import subscription_kb, start_kb
+from keyboards import subscription_kb, start_engagement_kb
+from texts import START_ENGAGEMENT
 
 router = Router()
 
@@ -28,8 +29,8 @@ async def on_check_subscription(callback: CallbackQuery):
 
     if is_subscribed:
         await callback.message.edit_text(
-            "✅ <b>Подписка подтверждена!</b>\n\nВыберите действие:",
-            reply_markup=start_kb(),
+            f"✅ <b>Подписка подтверждена!</b>\n\n{START_ENGAGEMENT}",
+            reply_markup=start_engagement_kb(),
             parse_mode="HTML",
         )
     else:

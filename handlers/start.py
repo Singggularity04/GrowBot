@@ -6,8 +6,8 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 import database as db
-from texts import START_MESSAGE, BOOKING_CONFIRMED, UNKNOWN_MESSAGE
-from keyboards import start_kb, back_to_menu_kb
+from texts import START_MESSAGE, START_ENGAGEMENT, BOOKING_CONFIRMED, UNKNOWN_MESSAGE
+from keyboards import start_engagement_kb, back_to_menu_kb
 from scheduler import schedule_funnel, cancel_reminder
 
 router = Router()
@@ -26,8 +26,9 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     )
     await db.log_interaction(message.from_user.id, "start")
 
-    # Send welcome
-    await message.answer(START_MESSAGE, reply_markup=start_kb())
+    # Send welcome hook followed by engagement
+    await message.answer(START_MESSAGE)
+    await message.answer(START_ENGAGEMENT, reply_markup=start_engagement_kb())
 
     # Schedule follow-up messages for users who don't book
     await schedule_funnel(message.bot, message.from_user.id)
@@ -39,15 +40,13 @@ async def back_to_menu(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
     await callback.answer()
     
-    if callback.message.photo:
+    try:
         await callback.message.delete()
-        await callback.message.answer(START_MESSAGE, reply_markup=start_kb())
-    else:
-        try:
-            await callback.message.edit_text(START_MESSAGE, reply_markup=start_kb())
-        except Exception:
-            await callback.message.delete()
-            await callback.message.answer(START_MESSAGE, reply_markup=start_kb())
+    except Exception:
+        pass
+    
+    await callback.message.answer(START_MESSAGE)
+    await callback.message.answer(START_ENGAGEMENT, reply_markup=start_engagement_kb())
 
 
 @router.callback_query(F.data == "i_booked")
@@ -60,7 +59,7 @@ async def user_booked(callback: CallbackQuery) -> None:
     # Cancel all pending follow-up messages
     await db.cancel_followups(callback.from_user.id)
     from scheduler import scheduler
-    for stage in (1, 2, 3):
+    for stage in (1, 2):
         try:
             scheduler.remove_job(f"funnel_{callback.from_user.id}_{stage}")
         except:

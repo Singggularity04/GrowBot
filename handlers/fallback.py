@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.types import Message
 
 from texts import UNKNOWN_MESSAGE
-from keyboards import start_kb
+from keyboards import start_engagement_kb
 
 router = Router()
 
@@ -12,4 +12,4 @@ router = Router()
 @router.message()
 async def fallback(message: Message) -> None:
     """Redirect unknown messages back to the menu."""
-    await message.answer(UNKNOWN_MESSAGE, reply_markup=start_kb())
+    await message.answer(UNKNOWN_MESSAGE, reply_markup=start_engagement_kb())

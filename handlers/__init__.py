@@ -3,7 +3,7 @@
 from handlers import (
     start, booking, quiz, portfolio, faq, trust, 
     admin, cancel, confirmation, feedback, subscription, 
-    fallback
+    fallback, sales
 )
 
 # Order matters: specific handlers first, fallback last
@@ -18,6 +18,7 @@ all_routers = [
     portfolio.router,
     faq.router,
     trust.router,
+    sales.router,
     admin.router,
     fallback.router,  # must be last — catches everything else
 ]

@@ -5,8 +5,8 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, FSInputFile
 
 import database as db
-from texts import PORTFOLIO_ITEMS, PORTFOLIO_HEADER
-from keyboards import portfolio_nav_kb, booking_choice_kb
+from texts import PORTFOLIO_ITEMS, PORTFOLIO_HEADER, PORTFOLIO_SIMILAR
+from keyboards import portfolio_nav_kb
 
 router = Router()
 
@@ -23,15 +23,27 @@ async def _send_portfolio_item(callback: CallbackQuery, index: int) -> None:
     photo_path = os.path.join(PHOTOS_DIR, os.path.basename(item["photo"]))
     kb = portfolio_nav_kb(index, total)
 
+    full_caption = f"{item['caption']}\n\n{PORTFOLIO_SIMILAR}"
+
     # Try to send photo; fall back to text if file not found
     if os.path.isfile(photo_path):
         photo = FSInputFile(photo_path)
-        # Delete old message and send photo (can't edit text → photo)
-        await callback.message.delete()
-        await callback.message.answer_photo(photo=photo, caption=item["caption"], reply_markup=kb)
+        if delete_message:
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+        await callback.message.answer_photo(photo=photo, caption=full_caption, reply_markup=kb)
     else:
         # Text-only mode (no photos uploaded yet)
-        await callback.message.edit_text(item["caption"], reply_markup=kb)
+        if delete_message:
+            try:
+                await callback.message.edit_text(full_caption, reply_markup=kb)
+            except Exception:
+                await callback.message.delete()
+                await callback.message.answer(full_caption, reply_markup=kb)
+        else:
+            await callback.message.answer(full_caption, reply_markup=kb)
 
 
 @router.callback_query(F.data == "portfolio")
@@ -39,7 +51,14 @@ async def show_portfolio(callback: CallbackQuery) -> None:
     """Show portfolio header then first item."""
     await callback.answer()
     await db.log_interaction(callback.from_user.id, "portfolio")
-    await _send_portfolio_item(callback, 0)
+    
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+        
+    await callback.message.answer(PORTFOLIO_HEADER, parse_mode="HTML")
+    await _send_portfolio_item(callback, 0, delete_message=False)
 
 
 @router.callback_query(F.data.startswith("port:"))
@@ -55,10 +74,12 @@ async def navigate_portfolio(callback: CallbackQuery) -> None:
         total = len(PORTFOLIO_ITEMS)
         kb = portfolio_nav_kb(index, total)
 
+        full_caption = f"{item['caption']}\n\n{PORTFOLIO_SIMILAR}"
+
         if os.path.isfile(photo_path):
             photo = FSInputFile(photo_path)
             await callback.message.delete()
-            await callback.message.answer_photo(photo=photo, caption=item["caption"], reply_markup=kb)
+            await callback.message.answer_photo(photo=photo, caption=full_caption, reply_markup=kb)
             return
 
     await _send_portfolio_item(callback, index)

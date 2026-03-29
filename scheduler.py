@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import database as db
 from config import ADMIN_ID, CHANNEL_ID, MOSCOW_TZ, now_moscow
-from config import FOLLOWUP_DELAY_1, FOLLOWUP_DELAY_2, FOLLOWUP_DELAY_3
+from config import FOLLOWUP_DELAY_1, FOLLOWUP_DELAY_2
 from texts import FOLLOWUP_TEXTS
 from keyboards import followup_kb
 
@@ -49,7 +49,6 @@ def schedule_funnel(bot, user_id: int):
     delays = [
         (1, FOLLOWUP_DELAY_1),
         (2, FOLLOWUP_DELAY_2),
-        (3, FOLLOWUP_DELAY_3),
     ]
 
     for stage, delay_sec in delays:

@@ -9,16 +9,16 @@ from texts import SERVICES, FAQ_ITEMS, QUIZ_Q3_OPTIONS
 
 # ─────────────────── Start menu ───────────────────
 
-def start_kb() -> InlineKeyboardMarkup:
+def start_engagement_kb() -> InlineKeyboardMarkup:
     """Main menu: 4 buttons capturing attention."""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="⚡ Записаться быстро", callback_data="quick_book"))
+    builder.row(
+        InlineKeyboardButton(text="📅 Записаться", callback_data="style_choice"),
+        InlineKeyboardButton(text="📸 Посмотреть работы", callback_data="portfolio")
+    )
     builder.row(InlineKeyboardButton(text="🧠 Помочь выбрать", callback_data="quiz_start"))
     builder.row(InlineKeyboardButton(text="📋 Мои записи", callback_data="my_bookings"))
-    builder.row(
-        InlineKeyboardButton(text="📸 Примеры работ", callback_data="portfolio"),
-        InlineKeyboardButton(text="❓ Задать вопрос", callback_data="faq"),
-    )
+    builder.row(InlineKeyboardButton(text="❓ Задать вопрос", callback_data="faq"))
     return builder.as_markup()
 
 
@@ -55,10 +55,34 @@ def service_detail_kb(service_key: str) -> InlineKeyboardMarkup:
 def booking_choice_kb() -> InlineKeyboardMarkup:
     """Choice: Book via Telegram Calendar OR via Dikidi link."""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📅 Записаться прямо в Telegram", callback_data="booking_telegram"))
+    builder.row(InlineKeyboardButton(text="📅 Выбрать время", callback_data="booking_telegram"))
     builder.row(InlineKeyboardButton(text="🔗 Записаться через Dikidi", url=DIKIDI_LINK))
     builder.row(InlineKeyboardButton(text="✅ Я записалась!", callback_data="i_booked"))
     builder.row(InlineKeyboardButton(text="🔙 Назад", callback_data="menu"))
+    return builder.as_markup()
+
+# ─────────────────── Sales Funnel ───────────────────
+
+def style_choice_kb() -> InlineKeyboardMarkup:
+    """Style choice before booking."""
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="🌸 Нежный", callback_data="style:tender"),
+        InlineKeyboardButton(text="🔥 Яркий", callback_data="style:bright")
+    )
+    builder.row(
+        InlineKeyboardButton(text="💎 Классика", callback_data="style:classic"),
+        InlineKeyboardButton(text="✨ Дизайн", callback_data="style:design")
+    )
+    builder.row(InlineKeyboardButton(text="🔙 Назад", callback_data="menu"))
+    return builder.as_markup()
+
+def upsell_kb() -> InlineKeyboardMarkup:
+    """Upsell yes/no options."""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="✅ Да", callback_data="upsell:yes"))
+    builder.row(InlineKeyboardButton(text="❌ Нет, спасибо", callback_data="upsell:no"))
+    builder.row(InlineKeyboardButton(text="🔙 Назад", callback_data="style_choice"))
     return builder.as_markup()
 
 
@@ -115,6 +139,11 @@ def portfolio_nav_kb(current: int, total: int) -> InlineKeyboardMarkup:
     """Portfolio navigation: prev/next + book CTA."""
     builder = InlineKeyboardBuilder()
 
+    builder.row(InlineKeyboardButton(text="✅ Да", callback_data="style_choice"))
+    
+    next_index = current + 1 if current < total - 1 else 0
+    builder.row(InlineKeyboardButton(text="🔄 Сначала посмотреть варианты", callback_data=f"port:{next_index}"))
+
     nav_buttons = []
     if current > 0:
         nav_buttons.append(InlineKeyboardButton(text="◀️", callback_data=f"port:{current - 1}"))
@@ -123,9 +152,6 @@ def portfolio_nav_kb(current: int, total: int) -> InlineKeyboardMarkup:
         nav_buttons.append(InlineKeyboardButton(text="▶️", callback_data=f"port:{current + 1}"))
     builder.row(*nav_buttons)
 
-    builder.row(InlineKeyboardButton(text="📅 Хочу так же! Записаться", callback_data="booking_telegram"))
-    builder.row(InlineKeyboardButton(text="🔗 Или через Dikidi", url=DIKIDI_LINK))
-    builder.row(InlineKeyboardButton(text="✅ Я записалась!", callback_data="i_booked"))
     builder.row(InlineKeyboardButton(text="🔙 В меню", callback_data="menu"))
     return builder.as_markup()
 
