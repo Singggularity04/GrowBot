@@ -13,7 +13,7 @@ router = Router()
 PHOTOS_DIR = os.path.join(os.path.dirname(__file__), "..", "photos")
 
 
-async def _send_portfolio_item(callback: CallbackQuery, index: int) -> None:
+async def _send_portfolio_item(callback: CallbackQuery, index: int, delete_message: bool = True) -> None:
     """Send a portfolio item — photo if exists, text otherwise."""
     total = len(PORTFOLIO_ITEMS)
     if index < 0 or index >= total:
