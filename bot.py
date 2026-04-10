@@ -15,6 +15,7 @@ from config import BOT_TOKEN
 from database import init_db
 from scheduler import scheduler, restore_jobs
 from handlers import all_routers
+from logger_utils import setup_telegram_logging
 
 
 async def main() -> None:
@@ -27,6 +28,9 @@ async def main() -> None:
         token=BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+
+    # Enable automatic error reporting to Admin
+    setup_telegram_logging(bot, ADMIN_ID)
 
     dp = Dispatcher()
 
@@ -54,11 +58,35 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        stream=sys.stdout,
+    import os
+    from logging.handlers import RotatingFileHandler
+    
+    # Create logs directory if not exists
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
+    # ROOT Logger Configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+    # 1. Console Handler (for journalctl / SSH)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # 2. Rotating File Handler (The "Auto-Cleaner")
+    # Max size: 5MB, keep last 5 files
+    file_handler = RotatingFileHandler(
+        "logs/bot.log", 
+        maxBytes=5*1024*1024, 
+        backupCount=5,
+        encoding="utf-8"
     )
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
