@@ -45,7 +45,12 @@ async def main() -> None:
 
     # Start polling
     logging.info("GROW BOT is starting...")
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    except Exception as e:
+        logging.critical(f"Fatal error during polling: {e}")
+        # Exit with error code to trigger systemd restart
+        sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -54,4 +59,10 @@ if __name__ == "__main__":
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
     )
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logging.info("Bot stopped by user.")
+    except Exception as e:
+        logging.critical(f"Core error: {e}")
+        sys.exit(1)
